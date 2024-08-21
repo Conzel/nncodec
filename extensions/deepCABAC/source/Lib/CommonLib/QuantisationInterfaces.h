@@ -43,30 +43,24 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include <array>
-#include "../CommonLib/TypeDef.h"
-#include "../CommonLib/Scan.h"
-#include "../CommonLib/QuantisationInterfaces.h"
-#include "../EncLib/CABACEncoder.h"
-#include "../EncLib/BinEncoder.h"
-
-uint32_t quantize(float32_t *weights, int32_t *level, const float32_t qstep, const int32_t stride, const int32_t numTotal, const DistType distType, const double lambdaScale, const uint8_t dq_flag, const uint32_t maxNumNoRem, const int32_t scan_order);
-void deQuantize(float32_t *weights, int32_t *level, const float32_t qstep, const uint32_t numWeights, const int32_t stride, const int32_t scan_order);
-class CabacRate : protected TCABACEncoder<BinEst>
+enum DistType
 {
-public:
-  struct pars
-  {
-    // int layerwidth;
-    uint32_t maxNumNoRem;
-  };
+    DIST_MSE = 0,
+};
 
-public:
-  // the constructor and the functions must have exactly this form
-  CabacRate(int32_t stateId, const pars &p);
-  void copyCtx(const CabacRate *other);
-  void updateCtx(int32_t level);
-  double operator()(int32_t level);
+enum QuantType
+{
+    URQ = 0,
+    TCQ8States = 1,
+};
 
-private:
-  const int32_t m_stateId;
+// trellis definitions
+struct Trellis8States
+{ // suitable 8-state TCQ
+    typedef const std::array<const std::array<int32_t, 2>, 8> stateTransTab;
+    static stateTransTab getStateTransTab()
+    {
+        static stateTransTab stt{{{0, 2}, {7, 5}, {1, 3}, {6, 4}, {2, 0}, {5, 7}, {3, 1}, {4, 6}}};
+        return stt;
+    }
 };
