@@ -50,26 +50,6 @@ POSSIBILITY OF SUCH DAMAGE.
 
 namespace py = pybind11;
 
-class RateEstimation
-{
-public:
-  RateEstimation(uint32_t cabac_unary_length_minus1 = 10) : rateEst(0, {cabac_unary_length_minus1}) {}
-  ~RateEstimation() {}
-
-  float32_t estimate(uint32_t quantisation_index)
-  {
-    return rateEst(quantisation_index) / this->scale;
-  }
-  void update(uint32_t quantisation_index)
-  {
-    rateEst.updateCtx(quantisation_index);
-  }
-
-private:
-  CabacRate rateEst;
-  double scale = double(1 << 15);
-};
-
 class Encoder
 {
 public:
