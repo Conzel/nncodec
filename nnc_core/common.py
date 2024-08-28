@@ -1,4 +1,4 @@
-'''
+"""
 The copyright in this software is being made available under the Clear BSD
 License, included below. No patent rights, trademark rights and/or 
 other Intellectual Property Rights other than the copyrights concerning 
@@ -36,33 +36,27 @@ BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
 IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
-'''
+"""
 
 import numpy as np
 
 
-    
-def get_qp_from_stepsize( stepsize, qp_density ):
+def get_qp_from_stepsize(stepsize, qp_density):
     k = 1 << qp_density
-    baseQP = np.floor( np.log2( stepsize ) ) * k
-    qp = baseQP + ( (stepsize * k) / 2**(baseQP/k) - k )
+    baseQP = np.floor(np.log2(stepsize)) * k
+    qp = baseQP + ((stepsize * k) / 2 ** (baseQP / k) - k)
     return qp
 
 
-def get_stepsize_from_qp( qp, qp_density ):
-    #assert isinstance(qp, np.int32)
+def get_stepsize_from_qp(qp, qp_density):
+    # assert isinstance(qp, np.int32)
     k = 1 << qp_density
-    mul = k + (qp & (k-1))
+    mul = k + (qp & (k - 1))
     shift = qp >> qp_density
     delta = mul * (2.0 ** (shift - qp_density))
     return delta
 
-def compute_qp_offset_to_dq_equivalent( qp_density ):
-    qp_off = (1 << qp_density)
-    return qp_off 
 
-
-
-
-
-
+def compute_qp_offset_to_dq_equivalent(qp_density):
+    qp_off = 1 << qp_density
+    return qp_off

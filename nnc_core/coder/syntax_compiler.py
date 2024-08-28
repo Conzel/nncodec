@@ -1,4 +1,4 @@
-'''
+"""
 The copyright in this software is being made available under the Clear BSD
 License, included below. No patent rights, trademark rights and/or 
 other Intellectual Property Rights other than the copyrights concerning 
@@ -36,11 +36,12 @@ BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
 IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
-'''
+"""
 
 from nnc_core import hls
 import numpy as np
 from nnc_core import nnr_model
+
 
 def compile_start_unit(profile):
     ndu_start = {}
@@ -54,14 +55,15 @@ def compile_start_unit(profile):
 
     return ndu_start
 
-def compile_mps(approx_data, topology_present ):
+
+def compile_mps(approx_data, topology_present):
     mps = {}
     # nnr_unit_header syntax elements
     mps["nnr_unit_type"] = hls.NnrUnitType.NNR_MPS
     mps["partial_data_counter_present_flag"] = 0
     mps["partial_data_counter"] = 0
     mps["independently_decodable_flag"] = 1
-    
+
     # model_parameter_set_payload syntax elements
     mps["topology_carriage_flag"] = topology_present
     mps["mps_sparsification_flag"] = 0
@@ -74,93 +76,163 @@ def compile_mps(approx_data, topology_present ):
         mps["mps_quantization_parameter"] = 0
     else:
         mps["mps_quantization_method_flags"] = 0
-    
+
     mps["mps_topology_indexed_reference_flag"] = 0
-    mps["nnr_reserved_zero_7bits"] = 0 
-    
-    return mps        
+    mps["nnr_reserved_zero_7bits"] = 0
+
+    return mps
 
 
-def compile_ndu_oob(tensor_dims = None, cabac_unary_length_minus1 = None, compressed_parameter_types = None, decomposition_parameter_dict = None ):
-   ndu_oob = {}
-   ndu_oob["input_parameters_present_flag"] = 1 if not all( [tensor_dims, cabac_unary_length_minus1, compressed_parameter_types, decomposition_parameter_dict and compressed_parameter_types & hls.BlockParameterTypes.NNR_CPT_DC != 0] ) else 0
-   if tensor_dims is not None:
-       ndu_oob["tensor_dimensions_flag"] = 0
-       ndu_oob["tensor_dimensions"] = tensor_dims
-       ndu_oob["count_tensor_dimensions"] = len(tensor_dims)
-   else:
-       ndu_oob["tensor_dimensions_flag"] = 1
-   if cabac_unary_length_minus1 is not None:
-       ndu_oob["cabac_unary_length_flag"] = 0
-       ndu_oob["cabac_unary_length_minus1"] = cabac_unary_length_minus1
-   else:
-       ndu_oob["cabac_unary_length_flag"] = 1
-   if compressed_parameter_types is not None:
-       ndu_oob["compressed_parameter_types"] = compressed_parameter_types
-   if decomposition_parameter_dict is not None and compressed_parameter_types & hls.BlockParameterTypes.NNR_CPT_DC != 0:
-       ndu_oob["decomposition_rank"] = decomposition_parameter_dict["decomposition_rank"]
-       ndu_oob["g_number_of_rows"] = decomposition_parameter_dict["g_number_of_rows"]
-   return ndu_oob
-    
-    
-def compile_ndu(param, approx_data, enc_info, model_info, ndu_oob, is_block, cpt, block_access, tensor_dims=None):
+def compile_ndu_oob(
+    tensor_dims=None,
+    cabac_unary_length_minus1=None,
+    compressed_parameter_types=None,
+    decomposition_parameter_dict=None,
+):
+    ndu_oob = {}
+    ndu_oob["input_parameters_present_flag"] = (
+        1
+        if not all(
+            [
+                tensor_dims,
+                cabac_unary_length_minus1,
+                compressed_parameter_types,
+                decomposition_parameter_dict
+                and compressed_parameter_types & hls.BlockParameterTypes.NNR_CPT_DC
+                != 0,
+            ]
+        )
+        else 0
+    )
+    if tensor_dims is not None:
+        ndu_oob["tensor_dimensions_flag"] = 0
+        ndu_oob["tensor_dimensions"] = tensor_dims
+        ndu_oob["count_tensor_dimensions"] = len(tensor_dims)
+    else:
+        ndu_oob["tensor_dimensions_flag"] = 1
+    if cabac_unary_length_minus1 is not None:
+        ndu_oob["cabac_unary_length_flag"] = 0
+        ndu_oob["cabac_unary_length_minus1"] = cabac_unary_length_minus1
+    else:
+        ndu_oob["cabac_unary_length_flag"] = 1
+    if compressed_parameter_types is not None:
+        ndu_oob["compressed_parameter_types"] = compressed_parameter_types
+    if (
+        decomposition_parameter_dict is not None
+        and compressed_parameter_types & hls.BlockParameterTypes.NNR_CPT_DC != 0
+    ):
+        ndu_oob["decomposition_rank"] = decomposition_parameter_dict[
+            "decomposition_rank"
+        ]
+        ndu_oob["g_number_of_rows"] = decomposition_parameter_dict["g_number_of_rows"]
+    return ndu_oob
+
+
+def compile_ndu(
+    param,
+    approx_data,
+    enc_info,
+    model_info,
+    ndu_oob,
+    is_block,
+    cpt,
+    block_access,
+    tensor_dims=None,
+):
     ndu_header = {}
-    ndu_header.update( ndu_oob )
+    ndu_header.update(ndu_oob)
 
-    if ndu_header["input_parameters_present_flag"] == 1: 
+    if ndu_header["input_parameters_present_flag"] == 1:
         if ndu_header["tensor_dimensions_flag"] == 1:
             assert tensor_dims is not None, "tensor_dimensions must be specified!"
             ndu_header["count_tensor_dimensions"] = len(tensor_dims)
             ndu_header["tensor_dimensions"] = tensor_dims
         if ndu_header["cabac_unary_length_flag"] == 1:
-            ndu_header["cabac_unary_length_minus1"] = enc_info["cabac_unary_length_minus1"]
+            ndu_header["cabac_unary_length_minus1"] = enc_info[
+                "cabac_unary_length_minus1"
+            ]
         ndu_header["compressed_parameter_types"] = cpt
         if cpt & hls.BlockParameterTypes.NNR_CPT_DC != 0:
-            ndu_header["decomposition_rank"] = approx_data["decomposition_rank"][block_access.block_id]
-            ndu_header["g_number_of_rows"]   = approx_data["g_number_of_rows"][block_access.block_id]
+            ndu_header["decomposition_rank"] = approx_data["decomposition_rank"][
+                block_access.block_id
+            ]
+            ndu_header["g_number_of_rows"] = approx_data["g_number_of_rows"][
+                block_access.block_id
+            ]
     else:
-        raise NotImplementedError("Out-of-band handling of input parameters not yet implemented!")
-        
-    ndu_header["mps_topology_indexed_reference_flag"] = 0 ##REQUIRED DURING CODING
+        raise NotImplementedError(
+            "Out-of-band handling of input parameters not yet implemented!"
+        )
+
+    ndu_header["mps_topology_indexed_reference_flag"] = 0  ##REQUIRED DURING CODING
 
     # nnr_unit_header syntax elements
     ndu_header["nnr_unit_type"] = hls.NnrUnitType.NNR_NDU
-    ndu_header["partial_data_counter_present_flag"] = 0 ##tbd: set correctly elsewhere
+    ndu_header["partial_data_counter_present_flag"] = 0  ##tbd: set correctly elsewhere
     ndu_header["partial_data_counter"] = 0
     ndu_header["independently_decodable_flag"] = 1
 
     # compressed_data_unit_header syntax elements
     if is_block:
-        ndu_header["nnr_compressed_data_unit_payload_type"] = hls.CompressedDataUnitPayloadType.NNR_PT_BLOCK
-        assert block_access != None , "Block access undefined"
+        ndu_header["nnr_compressed_data_unit_payload_type"] = (
+            hls.CompressedDataUnitPayloadType.NNR_PT_BLOCK
+        )
+        assert block_access != None, "Block access undefined"
         if cpt & hls.BlockParameterTypes.NNR_CPT_DC != 0:
-            param   = block_access.dc_g
+            param = block_access.dc_g
             param_h = block_access.dc_h
         else:
             param = block_access.w
-    elif (approx_data["approx_method"][param] == "uniform") or (approx_data["approx_method"][param] == "codebook"):
-        ndu_header["nnr_compressed_data_unit_payload_type"] = hls.CompressedDataUnitPayloadType.NNR_PT_FLOAT
+    elif (approx_data["approx_method"][param] == "uniform") or (
+        approx_data["approx_method"][param] == "codebook"
+    ):
+        ndu_header["nnr_compressed_data_unit_payload_type"] = (
+            hls.CompressedDataUnitPayloadType.NNR_PT_FLOAT
+        )
     elif approx_data["approx_method"][param] == "skip":
-        ndu_header["nnr_compressed_data_unit_payload_type"] = hls.CompressedDataUnitPayloadType.NNR_PT_INT
+        ndu_header["nnr_compressed_data_unit_payload_type"] = (
+            hls.CompressedDataUnitPayloadType.NNR_PT_INT
+        )
     else:
         assert param not in approx_data["approx_method"], "Unsupported approx_method."
-        ndu_header["nnr_compressed_data_unit_payload_type"] = hls.CompressedDataUnitPayloadType.NNR_PT_RAW_FLOAT
+        ndu_header["nnr_compressed_data_unit_payload_type"] = (
+            hls.CompressedDataUnitPayloadType.NNR_PT_RAW_FLOAT
+        )
         ndu_header["raw_float32_parameter"] = approx_data["parameters"][param]
-        
-    assert param != None 
+
+    assert param != None
 
     if (
-        (ndu_header["nnr_compressed_data_unit_payload_type"] == hls.CompressedDataUnitPayloadType.NNR_PT_BLOCK) or
-        (ndu_header["nnr_compressed_data_unit_payload_type"] == hls.CompressedDataUnitPayloadType.NNR_PT_FLOAT) or
-        (ndu_header["nnr_compressed_data_unit_payload_type"] == hls.CompressedDataUnitPayloadType.NNR_PT_INT)
+        (
+            ndu_header["nnr_compressed_data_unit_payload_type"]
+            == hls.CompressedDataUnitPayloadType.NNR_PT_BLOCK
+        )
+        or (
+            ndu_header["nnr_compressed_data_unit_payload_type"]
+            == hls.CompressedDataUnitPayloadType.NNR_PT_FLOAT
+        )
+        or (
+            ndu_header["nnr_compressed_data_unit_payload_type"]
+            == hls.CompressedDataUnitPayloadType.NNR_PT_INT
+        )
     ):
         ndu_header["dq_flag"] = approx_data["dq_flag"][param]
 
-    ndu_header["nnr_multiple_topology_elements_present_flag"] = 1 if ndu_header["nnr_compressed_data_unit_payload_type"] == hls.CompressedDataUnitPayloadType.NNR_PT_BLOCK else 0
+    ndu_header["nnr_multiple_topology_elements_present_flag"] = (
+        1
+        if ndu_header["nnr_compressed_data_unit_payload_type"]
+        == hls.CompressedDataUnitPayloadType.NNR_PT_BLOCK
+        else 0
+    )
     ndu_header["nnr_decompressed_data_format_present_flag"] = 0
 
     if ndu_header["nnr_multiple_topology_elements_present_flag"] == 1:
-        tpl_elem_ids = [p for p in block_access.topology_elem_generator(approx_data["compressed_parameter_types"])]
+        tpl_elem_ids = [
+            p
+            for p in block_access.topology_elem_generator(
+                approx_data["compressed_parameter_types"]
+            )
+        ]
         if ndu_header["mps_topology_indexed_reference_flag"] == 1:
             assert 0, "topology indexed not implemented yet!"
         else:
@@ -169,72 +241,91 @@ def compile_ndu(param, approx_data, enc_info, model_info, ndu_oob, is_block, cpt
     else:
         if ndu_header["mps_topology_indexed_reference_flag"] == 1:
             assert 0, "topology indexed not implemented yet!"
-        ndu_header["topology_elem_id"] = param #topology_elem_id == param Name
+        ndu_header["topology_elem_id"] = param  # topology_elem_id == param Name
 
     if approx_data["approx_method"][param] == "codebook":
         ndu_header["codebook_present_flag"] = 1
         ndu_header["codebook_egk__"] = approx_data["codebooks_egk"][param]
-        codebook_size = len( approx_data["codebooks"][param] )
+        codebook_size = len(approx_data["codebooks"][param])
         ndu_header["CbZeroOffset__"] = approx_data["codebook_zero_offsets"][param]
         ndu_header["codebook_size__"] = codebook_size
         ndu_header["codebook__"] = approx_data["codebooks"][param]
         if is_block and (cpt & hls.BlockParameterTypes.NNR_CPT_DC != 0):
-            assert approx_data["approx_method"][param_h] == "codebook", "Params must have the same approx_method!"
+            assert (
+                approx_data["approx_method"][param_h] == "codebook"
+            ), "Params must have the same approx_method!"
             ndu_header["codebook_egk__dc"] = approx_data["codebooks_egk"][param_h]
-            codebook_size = len( approx_data["codebooks"][param_h] )
-            ndu_header["CbZeroOffset__dc"] = approx_data["codebook_zero_offsets"][param_h]
+            codebook_size = len(approx_data["codebooks"][param_h])
+            ndu_header["CbZeroOffset__dc"] = approx_data["codebook_zero_offsets"][
+                param_h
+            ]
             ndu_header["codebook_size__dc"] = codebook_size
             ndu_header["codebook__dc"] = approx_data["codebooks"][param_h]
     else:
         ndu_header["codebook_present_flag"] = 0
 
-    ndu_header["nnr_decompressed_data_format"] = hls.DecompressedDataFormat.TENSOR_FLOAT32
+    ndu_header["nnr_decompressed_data_format"] = (
+        hls.DecompressedDataFormat.TENSOR_FLOAT32
+    )
 
-    if len( ndu_header["tensor_dimensions"] ) > 1:
+    if len(ndu_header["tensor_dimensions"]) > 1:
         ndu_header["scan_order"] = approx_data["scan_order"][param]
 
     return ndu_header
 
 
-def compile_ndu_eps( ndu_header, cabac_entry_point_list ):
+def compile_ndu_eps(ndu_header, cabac_entry_point_list):
     dims = ndu_header["tensor_dimensions"]
     height = dims[0]
     width = np.prod(dims[1:])
     if width > 1 and height > 1:
-#    if len( ndu_header["tensor_dimensions"] ) > 1:
+        #    if len( ndu_header["tensor_dimensions"] ) > 1:
         if ndu_header["scan_order"] > 0:
-#            ndu_header["cabac_entry_point_list_size"] = len(cabac_entry_point_list)
+            #            ndu_header["cabac_entry_point_list_size"] = len(cabac_entry_point_list)
             ndu_header["cabac_entry_point_list"] = cabac_entry_point_list
 
     return ndu_header
 
+
 def compile_tpl(model_info):
-    if model_info["topology_storage_format"] == nnr_model.TopologyStorageFormat.NNR_TPL_UNREC: ##ignore topology_data in this case!
+    if (
+        model_info["topology_storage_format"]
+        == nnr_model.TopologyStorageFormat.NNR_TPL_UNREC
+    ):  ##ignore topology_data in this case!
         tpl = {
             "topology_data": "",
-            "topology_storage_format": nnr_model.TopologyStorageFormat.NNR_TPL_UNREC
+            "topology_storage_format": nnr_model.TopologyStorageFormat.NNR_TPL_UNREC,
         }
-    elif model_info["topology_storage_format"] == nnr_model.TopologyStorageFormat.NNR_TPL_PYT: ##topology_data can be ignored. The parameter names are transmitted as topology_elem_id/topology_elem_id_index anyway!
-        topology_data = '' 
+    elif (
+        model_info["topology_storage_format"]
+        == nnr_model.TopologyStorageFormat.NNR_TPL_PYT
+    ):  ##topology_data can be ignored. The parameter names are transmitted as topology_elem_id/topology_elem_id_index anyway!
+        topology_data = ""
         tpl = {
             "topology_data": topology_data,
-            "topology_storage_format": nnr_model.TopologyStorageFormat.NNR_TPL_PYT
+            "topology_storage_format": nnr_model.TopologyStorageFormat.NNR_TPL_PYT,
         }
-    elif model_info["topology_storage_format"] == nnr_model.TopologyStorageFormat.NNR_TPL_TEF: ##topology_data can be ignored. The parameter names are transmitted as topology_elem_id/topology_elem_id_index anyway!
-        topology_data = ''
+    elif (
+        model_info["topology_storage_format"]
+        == nnr_model.TopologyStorageFormat.NNR_TPL_TEF
+    ):  ##topology_data can be ignored. The parameter names are transmitted as topology_elem_id/topology_elem_id_index anyway!
+        topology_data = ""
         tpl = {
             "topology_data": topology_data,
-            "topology_storage_format": nnr_model.TopologyStorageFormat.NNR_TPL_TEF
+            "topology_storage_format": nnr_model.TopologyStorageFormat.NNR_TPL_TEF,
         }
     else:
-        raise NotImplementedError("The given topology storage format is not implemented.")
+        raise NotImplementedError(
+            "The given topology storage format is not implemented."
+        )
 
-    tpl.update({
+    tpl.update(
+        {
             "nnr_unit_type": hls.NnrUnitType.NNR_TPL,
             "partial_data_counter_present_flag": 0,
             "partial_data_counter": 0,
             "independently_decodable_flag": 1,
-            "topology_compression_format" : model_info["topology_compression_format"]
-    })
+            "topology_compression_format": model_info["topology_compression_format"],
+        }
+    )
     return tpl
-

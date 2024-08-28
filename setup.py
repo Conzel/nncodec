@@ -1,4 +1,4 @@
-'''
+"""
 The copyright in this software is being made available under the Clear BSD
 License, included below. No patent rights, trademark rights and/or 
 other Intellectual Property Rights other than the copyrights concerning 
@@ -36,20 +36,21 @@ BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
 IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
-'''
+"""
+
 import sys
 
 MIN_PYTHON = (3, 6)
 
 if sys.version_info < MIN_PYTHON:
-    sys.exit( "Python {}.{} or later is required.".format( *MIN_PYTHON ) )
+    sys.exit("Python {}.{} or later is required.".format(*MIN_PYTHON))
 
 from setuptools import setup, find_packages, Extension
 from glob import glob
 from setuptools.command.build_ext import build_ext
 import setuptools
 
-__version__ = '0.3.1'
+__version__ = "0.3.1"
 
 
 class get_pybind_include(object):
@@ -58,17 +59,20 @@ class get_pybind_include(object):
 
     def __str__(self):
         import pybind11
+
         return pybind11.get_include(self.user)
 
 
-sources = glob( "extensions/deepCABAC/source/*.cpp*" ) + \
-          glob( "extensions/deepCABAC/source/Lib/CommonLib/*.cpp*" ) + \
-          glob( "extensions/deepCABAC/source/Lib/EncLib/*.cpp*" ) + \
-          glob( "extensions/deepCABAC/source/Lib/DecLib/*.cpp*" )
+sources = (
+    glob("extensions/deepCABAC/source/*.cpp*")
+    + glob("extensions/deepCABAC/source/Lib/CommonLib/*.cpp*")
+    + glob("extensions/deepCABAC/source/Lib/EncLib/*.cpp*")
+    + glob("extensions/deepCABAC/source/Lib/DecLib/*.cpp*")
+)
 
 ext_modules = [
     Extension(
-        'deepCABAC',
+        "deepCABAC",
         sources=sources,
         include_dirs=[
             # Path to pybind11 headers
@@ -78,17 +82,19 @@ ext_modules = [
             "extensions/deepCABAC/source/Lib",
             "extensions/deepCABAC/source/Lib/CommonLib"
             "extensions/deepCABAC/source/Lib/EncLib"
-            "extensions/deepCABAC/source/Lib/DecLib"
+            "extensions/deepCABAC/source/Lib/DecLib",
         ],
-        language='c++'
+        language="c++",
     ),
 ]
+
 
 # cf http://bugs.python.org/issue26689
 def has_flag(compiler, flagname):
     import tempfile
-    with tempfile.NamedTemporaryFile('w', suffix='.cpp') as f:
-        f.write('int main (int argc, char **argv) { return 0; }')
+
+    with tempfile.NamedTemporaryFile("w", suffix=".cpp") as f:
+        f.write("int main (int argc, char **argv) { return 0; }")
         try:
             compiler.compile([f.name], extra_postargs=[flagname])
         except setuptools.distutils.errors.CompileError:
@@ -97,59 +103,60 @@ def has_flag(compiler, flagname):
 
 
 def cpp_flag(compiler):
-    flags = ['-std=c++17', '-std=c++14', '-std=c++11']
+    flags = ["-std=c++17", "-std=c++14", "-std=c++11"]
 
     for flag in flags:
-        if has_flag(compiler, flag): return flag
+        if has_flag(compiler, flag):
+            return flag
 
-    raise RuntimeError('Unsupported compiler -- at least C++11 support '
-                       'is needed!')
+    raise RuntimeError("Unsupported compiler -- at least C++11 support " "is needed!")
 
 
 class BuildExt(build_ext):
     c_opts = {
-        'msvc': ['/EHsc'],
-        'unix': [],
+        "msvc": ["/EHsc"],
+        "unix": [],
     }
     l_opts = {
-        'msvc': [],
-        'unix': [],
+        "msvc": [],
+        "unix": [],
     }
 
-    if sys.platform == 'darwin':
-        darwin_opts = ['-stdlib=libc++', '-mmacosx-version-min=10.14']
-        c_opts['unix'] += darwin_opts
-        l_opts['unix'] += darwin_opts
+    if sys.platform == "darwin":
+        darwin_opts = ["-stdlib=libc++", "-mmacosx-version-min=10.14"]
+        c_opts["unix"] += darwin_opts
+        l_opts["unix"] += darwin_opts
 
     def build_extensions(self):
         ct = self.compiler.compiler_type
         opts = self.c_opts.get(ct, [])
         link_opts = self.l_opts.get(ct, [])
-        if ct == 'unix':
+        if ct == "unix":
             opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
             opts.append(cpp_flag(self.compiler))
-            if has_flag(self.compiler, '-fvisibility=hidden'):
-                opts.append('-fvisibility=hidden')
-        elif ct == 'msvc':
+            if has_flag(self.compiler, "-fvisibility=hidden"):
+                opts.append("-fvisibility=hidden")
+        elif ct == "msvc":
             opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
         for ext in self.extensions:
             ext.extra_compile_args = opts
             ext.extra_link_args = link_opts
         build_ext.build_extensions(self)
 
+
 setup(
-    name='NNC',
+    name="NNC",
     version=__version__,
     packages=find_packages(),
-    author='Paul Haase, Daniel Becking',
-    author_email='paul.haase@hhi.fraunhofer.de, daniel.becking@hhi.fraunhofer.de',
-    url='https://hhi.fraunhofer.de',
-    description='Neural Network Codec. deepCABAC C++ binding using pybind11.',
-    long_description='',
+    author="Paul Haase, Daniel Becking",
+    author_email="paul.haase@hhi.fraunhofer.de, daniel.becking@hhi.fraunhofer.de",
+    url="https://hhi.fraunhofer.de",
+    description="Neural Network Codec. deepCABAC C++ binding using pybind11.",
+    long_description="",
     ext_modules=ext_modules,
-    install_requires=['pybind11>=2.3'],
-    setup_requires=['pybind11>=2.3'],
-    cmdclass={'build_ext': BuildExt},
+    install_requires=["pybind11>=2.3"],
+    setup_requires=["pybind11>=2.3"],
+    cmdclass={"build_ext": BuildExt},
     zip_safe=False,
     package_data={"": ["*.txt"]},
     include_package_data=True,

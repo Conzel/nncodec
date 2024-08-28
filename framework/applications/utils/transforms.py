@@ -1,4 +1,4 @@
-'''
+"""
 The copyright in this software is being made available under the Clear BSD
 License, included below. No patent rights, trademark rights and/or 
 other Intellectual Property Rights other than the copyrights concerning 
@@ -36,7 +36,7 @@ BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
 IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
-'''
+"""
 
 """
 Defines data and model transforms.
@@ -68,57 +68,80 @@ def transforms_tef_model_zoo(filename, label, image_size=224):
     height, width, _ = img.shape
     startx = width // 2 - (image_size // 2)
     starty = height // 2 - (image_size // 2)
-    img = img[starty:starty + image_size, startx:startx + image_size]
-    assert img.shape[0] == image_size and img.shape[1] == image_size, (img.shape, height, width)
+    img = img[starty : starty + image_size, startx : startx + image_size]
+    assert img.shape[0] == image_size and img.shape[1] == image_size, (
+        img.shape,
+        height,
+        width,
+    )
 
     # BGR to RGB
     img = img[:, :, ::-1]
 
     return img, label
 
+
 class ScaledConv2d(nn.Conv2d):
     def __init__(self, in_channels, out_channels, *args, **kwargs):
         super().__init__(in_channels, out_channels, *args, **kwargs)
-        self.weight_scaling = nn.Parameter(torch.ones_like(torch.Tensor(out_channels, 1, 1, 1)))
+        self.weight_scaling = nn.Parameter(
+            torch.ones_like(torch.Tensor(out_channels, 1, 1, 1))
+        )
         # self.reset_parameters()
 
     def reset_parameters(self):
         # The if condition is added so that the super call in init does not reset_parameters as well.
-        if hasattr(self, 'weight_scaling'):
+        if hasattr(self, "weight_scaling"):
             nn.init.normal_(self.weight_scaling, 1, 1e-5)
             super().reset_parameters()
 
     def forward(self, input):
-        torch_version_str = str(torch.__version__).split('.')
-        if int(torch_version_str[0]) < 1 or (int(torch_version_str[0]) == 1 and int(torch_version_str[1]) <= 7):
+        torch_version_str = str(torch.__version__).split(".")
+        if int(torch_version_str[0]) < 1 or (
+            int(torch_version_str[0]) == 1 and int(torch_version_str[1]) <= 7
+        ):
             return self._conv_forward(input, self.weight_scaling * self.weight)
         else:
-            return self._conv_forward(input, self.weight_scaling * self.weight, self.bias)
+            return self._conv_forward(
+                input, self.weight_scaling * self.weight, self.bias
+            )
+
 
 class ScaledLinear(nn.Linear):
     def __init__(self, in_features, out_features, *args, **kwargs):
         super().__init__(in_features, out_features, *args, **kwargs)
-        self.weight_scaling = nn.Parameter(torch.ones_like(torch.Tensor(out_features, 1)))
+        self.weight_scaling = nn.Parameter(
+            torch.ones_like(torch.Tensor(out_features, 1))
+        )
         # self.reset_parameters()
 
     def reset_parameters(self):
         # The if condition is added so that the super call in init does not reset_parameters as well.
-            if hasattr(self, 'weight_scaling'):
-                nn.init.normal_(self.weight_scaling, 1, 1e-5)
-                super().reset_parameters()
+        if hasattr(self, "weight_scaling"):
+            nn.init.normal_(self.weight_scaling, 1, 1e-5)
+            super().reset_parameters()
 
     def forward(self, input):
         return F.linear(input, self.weight_scaling * self.weight, self.bias)
 
+
 class LSA:
-    def __init__(self,
-                 original_model):
+    def __init__(self, original_model):
 
         self.mdl = copy.deepcopy(original_model)
 
     def update_conv2d(self, m, parent):
-        lsa_update = ScaledConv2d(m[1].in_channels, m[1].out_channels, m[1].kernel_size, m[1].stride,
-                                  m[1].padding, m[1].dilation, m[1].groups, None, m[1].padding_mode)
+        lsa_update = ScaledConv2d(
+            m[1].in_channels,
+            m[1].out_channels,
+            m[1].kernel_size,
+            m[1].stride,
+            m[1].padding,
+            m[1].dilation,
+            m[1].groups,
+            None,
+            m[1].padding_mode,
+        )
         lsa_update.weight, lsa_update.bias = m[1].weight, m[1].bias
         setattr(parent, m[0], lsa_update)
 

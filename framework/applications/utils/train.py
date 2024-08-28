@@ -1,4 +1,4 @@
-'''
+"""
 The copyright in this software is being made available under the Clear BSD
 License, included below. No patent rights, trademark rights and/or 
 other Intellectual Property Rights other than the copyrights concerning 
@@ -36,7 +36,8 @@ BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
 IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
-'''
+"""
+
 import logging
 import torch
 import numpy as np
@@ -44,13 +45,23 @@ from tqdm import tqdm
 
 LOGGER = logging.getLogger(__name__)
 
+
 def freeze_batch_norm_layers(model):
     for name, mod in model.named_modules():
         if isinstance(mod, torch.nn.BatchNorm2d):
             mod.eval()
 
-def train_classification_model(model, optimizer, criterion, trainloader, device,
-                         verbose=True, max_batches=None, freeze_batch_norm=False):
+
+def train_classification_model(
+    model,
+    optimizer,
+    criterion,
+    trainloader,
+    device,
+    verbose=True,
+    max_batches=None,
+    freeze_batch_norm=False,
+):
     """
     Parameters
     ----------
@@ -86,8 +97,17 @@ def train_classification_model(model, optimizer, criterion, trainloader, device,
     total = 0
 
     total_iterations = max_batches or len(trainloader)
-    iterator = tqdm(enumerate(trainloader), total=total_iterations, position=0, leave=True, desc='train_classification') \
-        if verbose else enumerate(trainloader)
+    iterator = (
+        tqdm(
+            enumerate(trainloader),
+            total=total_iterations,
+            position=0,
+            leave=True,
+            desc="train_classification",
+        )
+        if verbose
+        else enumerate(trainloader)
+    )
 
     for batch_idx, (inputs, targets) in iterator:
 
@@ -98,7 +118,7 @@ def train_classification_model(model, optimizer, criterion, trainloader, device,
         loss = criterion(outputs, targets)
 
         if torch.isnan(loss):
-            LOGGER.warning('--> Loss is Nan.')
+            LOGGER.warning("--> Loss is Nan.")
             break
 
         loss.backward()
@@ -115,5 +135,5 @@ def train_classification_model(model, optimizer, criterion, trainloader, device,
 
     acc = correct * 100.0 / total
     mean_train_loss = np.mean(train_loss)
-    
+
     return acc, mean_train_loss

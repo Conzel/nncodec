@@ -1,4 +1,4 @@
-'''
+"""
 The copyright in this software is being made available under the Clear BSD
 License, included below. No patent rights, trademark rights and/or 
 other Intellectual Property Rights other than the copyrights concerning 
@@ -36,22 +36,38 @@ BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
 IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
-'''
+"""
 
 import copy
 import torch
 import numpy as np
 import tensorflow as tf
-from sklearn.metrics import classification_report, precision_score, recall_score, f1_score
+from sklearn.metrics import (
+    classification_report,
+    precision_score,
+    recall_score,
+    f1_score,
+)
 from tqdm import tqdm
 
 from framework.applications.utils.metrics import get_topk_accuracy_per_batch
 
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def evaluate_classification_model(model, criterion, testloader, testset,  min_sample_size=1000, max_batches=None,
-                                  early_stopping_threshold=None, device=DEVICE, print_classification_report=False,
-                                  return_predictions=False, verbose=False):
+
+def evaluate_classification_model(
+    model,
+    criterion,
+    testloader,
+    testset,
+    min_sample_size=1000,
+    max_batches=None,
+    early_stopping_threshold=None,
+    device=DEVICE,
+    print_classification_report=False,
+    return_predictions=False,
+    verbose=False,
+):
     """
     Helper function to evaluate model on test dataset.
 
@@ -97,7 +113,11 @@ def evaluate_classification_model(model, criterion, testloader, testset,  min_sa
 
     # set (verbose) iterator
     total_iterations = max_batches or len(testloader)
-    iterator = tqdm(enumerate(testloader), total=total_iterations, position=0, leave=True) if verbose else enumerate(testloader)
+    iterator = (
+        tqdm(enumerate(testloader), total=total_iterations, position=0, leave=True)
+        if verbose
+        else enumerate(testloader)
+    )
 
     with torch.no_grad():
         for batch_idx, (inputs, targets) in iterator:
@@ -117,21 +137,29 @@ def evaluate_classification_model(model, criterion, testloader, testset,  min_sa
             all_predictions.append(np.array(predicted.cpu()))
             all_labels.append(np.array(targets.cpu()))
 
-            acc = 100. * correct / total
+            acc = 100.0 * correct / total
             if batch_idx == max_batches:
                 break
-            elif len(all_predictions) > min_sample_size and early_stopping_threshold is not None and \
-                    acc < early_stopping_threshold:
+            elif (
+                len(all_predictions) > min_sample_size
+                and early_stopping_threshold is not None
+                and acc < early_stopping_threshold
+            ):
                 break
 
-        acc = 100. * correct / total
+        acc = 100.0 * correct / total
         if top5_acc != 0:
             top5_acc = top5_acc / total
 
         if print_classification_report:
-            print(classification_report(np.concatenate(all_labels), np.concatenate(all_predictions),
-                                        target_names=list(testset.mapping.keys()),
-                                        labels=list(testset.mapping.values())))
+            print(
+                classification_report(
+                    np.concatenate(all_labels),
+                    np.concatenate(all_predictions),
+                    target_names=list(testset.mapping.keys()),
+                    labels=list(testset.mapping.values()),
+                )
+            )
 
         if return_predictions:
             return np.concatenate(all_predictions)
@@ -140,12 +168,20 @@ def evaluate_classification_model(model, criterion, testloader, testset,  min_sa
             return acc, float(top5_acc), mean_test_loss
 
 
-def evaluate_classification_model_TEF(model, test_loader, test_set, num_workers=8, verbose=0):
+def evaluate_classification_model_TEF(
+    model, test_loader, test_set, num_workers=8, verbose=0
+):
 
-    _ , val_labels = zip(*test_set.imgs)
+    _, val_labels = zip(*test_set.imgs)
 
-    y_pred = model.predict(test_loader, verbose=verbose, callbacks=None, max_queue_size=10, workers=num_workers,
-                           use_multiprocessing=True)
+    y_pred = model.predict(
+        test_loader,
+        verbose=verbose,
+        callbacks=None,
+        max_queue_size=10,
+        workers=num_workers,
+        use_multiprocessing=True,
+    )
 
     top5 = tf.keras.metrics.sparse_top_k_categorical_accuracy(val_labels, y_pred, k=5)
     top1 = tf.keras.metrics.sparse_categorical_accuracy(val_labels, y_pred)

@@ -1,4 +1,4 @@
-'''
+"""
 The copyright in this software is being made available under the Clear BSD
 License, included below. No patent rights, trademark rights and/or 
 other Intellectual Property Rights other than the copyrights concerning 
@@ -36,13 +36,15 @@ BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
 IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
-'''
+"""
+
 import numpy as np
 import torch
 import tensorflow as tf
 from torch.utils.data import dataloader, random_split
 from framework.applications.datasets import imagenet
 from framework.applications.utils import evaluation, train, transforms
+
 
 class ModelSetting:
 
@@ -56,27 +58,21 @@ class ModelSetting:
         self.train_cf = False
 
     def init_training(self, dataset_path, batch_size, num_workers):
-        train_set = self.dataset(
-            root=dataset_path,
-            split='train'
-        )
+        train_set = self.dataset(root=dataset_path, split="train")
         train_loader = torch.utils.data.DataLoader(
-                    train_set,
-                    batch_size=batch_size,
-                    shuffle=True,
-                    num_workers=num_workers,
-                    pin_memory=True,
-                    collate_fn=getattr(train_set, "collate_fn", dataloader.default_collate),
-                    sampler=getattr(train_set, "sampler", None),
-                )
+            train_set,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=num_workers,
+            pin_memory=True,
+            collate_fn=getattr(train_set, "collate_fn", dataloader.default_collate),
+            sampler=getattr(train_set, "sampler", None),
+        )
 
         return train_loader
 
     def init_test(self, dataset_path, batch_size, num_workers):
-        test_set = self.dataset(
-            root=dataset_path,
-            split='test'
-        )
+        test_set = self.dataset(root=dataset_path, split="test")
 
         test_loader = torch.utils.data.DataLoader(
             test_set,
@@ -89,12 +85,8 @@ class ModelSetting:
         )
         return test_set, test_loader
 
-    
     def init_validation(self, dataset_path, batch_size, num_workers):
-        val_set = self.dataset(
-            root=dataset_path,
-            split='val'
-        )
+        val_set = self.dataset(root=dataset_path, split="val")
 
         val_loader = torch.utils.data.DataLoader(
             val_set,
@@ -109,103 +101,134 @@ class ModelSetting:
         return val_set, val_loader
 
     def init_test_tef(self, dataset_path, batch_size, num_workers, model_name):
-        test_set = self.dataset(
-            root=dataset_path,
-            split='test'
-        )
+        test_set = self.dataset(root=dataset_path, split="test")
         self.__model_name = model_name
 
         test_images, test_labels = zip(*test_set.imgs)
-        test_loader = tf.data.Dataset.from_tensor_slices((list(test_images), list(test_labels)))
-        test_loader = test_loader.map(lambda image, label: tf.py_function(self.preprocess,
-                                                                              inp=[image, label],
-                                                                              Tout=[tf.float32, tf.int32]), num_parallel_calls=num_workers).batch(
-                                                                                batch_size)
+        test_loader = tf.data.Dataset.from_tensor_slices(
+            (list(test_images), list(test_labels))
+        )
+        test_loader = test_loader.map(
+            lambda image, label: tf.py_function(
+                self.preprocess, inp=[image, label], Tout=[tf.float32, tf.int32]
+            ),
+            num_parallel_calls=num_workers,
+        ).batch(batch_size)
 
         return test_set, test_loader
 
     def init_validation_tef(self, dataset_path, batch_size, num_workers, model_name):
-        val_set = self.dataset(
-            root=dataset_path,
-            split='val'
-        )
+        val_set = self.dataset(root=dataset_path, split="val")
         self.__model_name = model_name
 
         val_images, val_labels = zip(*val_set.imgs)
-        val_loader = tf.data.Dataset.from_tensor_slices((list(val_images), list(val_labels)))
-        val_loader = val_loader.map(lambda image, label: tf.py_function(self.preprocess,
-                                                                              inp=[image, label],
-                                                                              Tout=[tf.float32, tf.int32]), num_parallel_calls=num_workers).batch(
-                                                                                batch_size)
+        val_loader = tf.data.Dataset.from_tensor_slices(
+            (list(val_images), list(val_labels))
+        )
+        val_loader = val_loader.map(
+            lambda image, label: tf.py_function(
+                self.preprocess, inp=[image, label], Tout=[tf.float32, tf.int32]
+            ),
+            num_parallel_calls=num_workers,
+        ).batch(batch_size)
 
         return val_set, val_loader
 
-    
-    def preprocess(
-                    self,
-                    image,
-                    label
-    ):
+    def preprocess(self, image, label):
         image_size = 224
 
-        if self.__model_name == 'EfficientNetB1' or self.__model_name == 'efficientnetb1':
+        if (
+            self.__model_name == "EfficientNetB1"
+            or self.__model_name == "efficientnetb1"
+        ):
             image_size = 240
-        elif self.__model_name == 'EfficientNetB2' or self.__model_name == 'efficientnetb2':
+        elif (
+            self.__model_name == "EfficientNetB2"
+            or self.__model_name == "efficientnetb2"
+        ):
             image_size = 260
-        elif self.__model_name == 'EfficientNetB3' or self.__model_name == 'efficientnetb3':
+        elif (
+            self.__model_name == "EfficientNetB3"
+            or self.__model_name == "efficientnetb3"
+        ):
             image_size = 300
-        elif self.__model_name == 'EfficientNetB4' or self.__model_name == 'efficientnetb4':
+        elif (
+            self.__model_name == "EfficientNetB4"
+            or self.__model_name == "efficientnetb4"
+        ):
             image_size = 380
-        elif self.__model_name == 'EfficientNetB5' or self.__model_name == 'efficientnetb5':
+        elif (
+            self.__model_name == "EfficientNetB5"
+            or self.__model_name == "efficientnetb5"
+        ):
             image_size = 456
-        elif self.__model_name == 'EfficientNetB6' or self.__model_name == 'efficientnetb6':
+        elif (
+            self.__model_name == "EfficientNetB6"
+            or self.__model_name == "efficientnetb6"
+        ):
             image_size = 528
-        elif self.__model_name == 'EfficientNetB7' or self.__model_name == 'efficientnetb7':
+        elif (
+            self.__model_name == "EfficientNetB7"
+            or self.__model_name == "efficientnetb7"
+        ):
             image_size = 600
 
         image, label = self.model_transform(image, label, image_size=image_size)
 
-        if 'DenseNet' in self.__model_name or 'densenet' in self.__model_name:
+        if "DenseNet" in self.__model_name or "densenet" in self.__model_name:
             return tf.keras.applications.densenet.preprocess_input(image), label
-        elif 'EfficientNet' in self.__model_name or 'efficientnet' in self.__model_name:
+        elif "EfficientNet" in self.__model_name or "efficientnet" in self.__model_name:
             return tf.keras.applications.efficientnet.preprocess_input(image), label
-        elif self.__model_name == 'InceptionResNetV2' or self.__model_name == 'inception_resnet_v2':
-            return tf.keras.applications.inception_resnet_v2.preprocess_input(image), label
-        elif self.__model_name == 'InceptionV3' or self.__model_name == "inception_v3":
+        elif (
+            self.__model_name == "InceptionResNetV2"
+            or self.__model_name == "inception_resnet_v2"
+        ):
+            return (
+                tf.keras.applications.inception_resnet_v2.preprocess_input(image),
+                label,
+            )
+        elif self.__model_name == "InceptionV3" or self.__model_name == "inception_v3":
             return tf.keras.applications.inception_v3.preprocess_input(image), label
-        elif self.__model_name == 'MobileNet' or ( 'mobilenet' in self.__model_name and 'v2' not in self.__model_name ):
+        elif self.__model_name == "MobileNet" or (
+            "mobilenet" in self.__model_name and "v2" not in self.__model_name
+        ):
             return tf.keras.applications.mobilenet.preprocess_input(image), label
-        elif self.__model_name == 'MobileNetV2' or 'mobilenetv2' in self.__model_name:
+        elif self.__model_name == "MobileNetV2" or "mobilenetv2" in self.__model_name:
             return tf.keras.applications.mobilenet_v2.preprocess_input(image), label
-        elif 'NASNet' in self.__model_name:
+        elif "NASNet" in self.__model_name:
             return tf.keras.applications.nasnet.preprocess_input(image), label
-        elif ('ResNet' in self.__model_name and 'V2' not in self.__model_name) or ('resnet' in self.__model_name and 'v2' not in self.__model_name):
+        elif ("ResNet" in self.__model_name and "V2" not in self.__model_name) or (
+            "resnet" in self.__model_name and "v2" not in self.__model_name
+        ):
             return tf.keras.applications.resnet.preprocess_input(image), label
-        elif ('ResNet' in self.__model_name and 'V2' in self.__model_name) or ('resnet' in self.__model_name and 'v2' in self.__model_name):
+        elif ("ResNet" in self.__model_name and "V2" in self.__model_name) or (
+            "resnet" in self.__model_name and "v2" in self.__model_name
+        ):
             return tf.keras.applications.resnet_v2.preprocess_input(image), label
-        elif self.__model_name == 'VGG16' or self.__model_name == 'vgg16':
+        elif self.__model_name == "VGG16" or self.__model_name == "vgg16":
             return tf.keras.applications.vgg16.preprocess_input(image), label
-        elif self.__model_name == 'VGG19' or self.__model_name == 'vgg19':
+        elif self.__model_name == "VGG19" or self.__model_name == "vgg19":
             return tf.keras.applications.vgg19.preprocess_input(image), label
-        elif self.__model_name == 'Xception' or self.__model_name == 'xception':
+        elif self.__model_name == "Xception" or self.__model_name == "xception":
             return tf.keras.applications.xception.preprocess_input(image), label
-        elif 'RegNet' in self.__model_name or 'regnet' in self.__model_name:
+        elif "RegNet" in self.__model_name or "regnet" in self.__model_name:
             return tf.keras.applications.regnet.preprocess_input(image), label
 
 
 # supported use cases
 use_cases = {
-    "NNR_PYT":  ModelSetting( None,
-                          evaluation.evaluate_classification_model,
-                          train.train_classification_model,
-                          imagenet.imagenet_dataloaders,
-                          torch.nn.CrossEntropyLoss()
-                          ),
-
-    "NNR_TEF": ModelSetting( transforms.transforms_tef_model_zoo,
-                            evaluation.evaluate_classification_model_TEF,
-                            None,
-                            imagenet.imagenet_dataloaders,
-                            torch.nn.CrossEntropyLoss
-                            )
+    "NNR_PYT": ModelSetting(
+        None,
+        evaluation.evaluate_classification_model,
+        train.train_classification_model,
+        imagenet.imagenet_dataloaders,
+        torch.nn.CrossEntropyLoss(),
+    ),
+    "NNR_TEF": ModelSetting(
+        transforms.transforms_tef_model_zoo,
+        evaluation.evaluate_classification_model_TEF,
+        None,
+        imagenet.imagenet_dataloaders,
+        torch.nn.CrossEntropyLoss,
+    ),
 }
