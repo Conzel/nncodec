@@ -77,11 +77,11 @@ public:
   RateEstimation(uint32_t cabac_unary_length_minus1 = 10) : rateEst(0, {cabac_unary_length_minus1}) {}
   ~RateEstimation() {}
 
-  float32_t estimate(uint32_t quantisation_index)
+  float32_t estimate(int32_t quantisation_index)
   {
     return rateEst(quantisation_index) / this->scale;
   }
-  void update(uint32_t quantisation_index)
+  void update(int32_t quantisation_index)
   {
     rateEst.updateCtx(quantisation_index);
   }
