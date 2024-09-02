@@ -388,7 +388,9 @@ def compress(
         nnc_mdl = nnc_core.nnr_model.NNRModel(parameter_dict)
 
     if model_executer is not None:
-        assert isinstance( model_executer, nnc_core.nnr_model.ModelExecute ), "model_executer must be of type ModelExecute!"
+        assert isinstance(
+            model_executer, nnc_core.nnr_model.ModelExecute
+        ), "model_executer must be of type ModelExecute!"
 
     if block_id_and_param_type is not None:
         blkIdParamTypeOk = nnc_core.nnr_model.sanity_check_block_id_and_param_type(
