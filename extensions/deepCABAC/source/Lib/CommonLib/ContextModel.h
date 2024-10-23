@@ -55,12 +55,15 @@ public:
     void initState(uint8_t ecoInit = 0);
     void resetState();
     void updateState( int32_t minusBin );
+    // Range Least Probable Symbol?
     uint32_t getRLPS( uint32_t range ) const;
+    // Minus Most Probable Symbol?
     int32_t getMinusMPS() const;
     BinScaledEstBits getBits() const;
 private:
     int8_t  S0;
     int16_t S0plusS1;
+    /// @brief Range of the arithmetic coder?
     uint8_t r;
     uint8_t StoreInitIdx;
 };

@@ -44,6 +44,8 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include "TypeDef.h"
 
+/// @brief  This class is responsible for getting the locations of the different flags in the
+/// flag array.
 class ContextModeler
 {
 public:

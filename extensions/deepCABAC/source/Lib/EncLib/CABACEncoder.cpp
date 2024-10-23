@@ -1,13 +1,13 @@
 /* -----------------------------------------------------------------------------
 The copyright in this software is being made available under the Clear BSD
-License, included below. No patent rights, trademark rights and/or 
-other Intellectual Property Rights other than the copyrights concerning 
+License, included below. No patent rights, trademark rights and/or
+other Intellectual Property Rights other than the copyrights concerning
 the Software are granted under this license.
 
 The Clear BSD License
 
-Copyright (c) 2019-2023, Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. & The NNCodec Authors.
-All rights reserved.
+Copyright (c) 2019-2023, Fraunhofer-Gesellschaft zur Förderung der angewandten
+Forschung e.V. & The NNCodec Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted (subject to the limitations in the disclaimer below) provided that
@@ -38,96 +38,79 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
 
-------------------------------------------------------------------------------------------- */
+-------------------------------------------------------------------------------------------
+*/
 #include "CABACEncoder.h"
-#include <iostream>
-#include <cstdlib>
 #include <cmath>
+#include <cstdlib>
+#include <iostream>
 
-
-void CABACEncoder::startCabacEncoding( std::vector<uint8_t>* pBytestream )
-{
-    m_BinEncoder.setByteStreamBuf(pBytestream);
-    m_BinEncoder.startBinEncoder();
+void CABACEncoder::startCabacEncoding(std::vector<uint8_t> *pBytestream) {
+  m_BinEncoder.setByteStreamBuf(pBytestream);
+  m_BinEncoder.startBinEncoder();
 }
 
-void CABACEncoder::initCtxMdls(uint32_t numGtxFlags, uint8_t param_opt_flag)
-{
+void CABACEncoder::initCtxMdls(uint32_t numGtxFlags, uint8_t param_opt_flag) {
   TCABACEncoder<BinEnc>::xInitCtxModels(numGtxFlags);
   initOptimizerCtxMdls(numGtxFlags);
 
   m_ParamOptFlag = param_opt_flag;
 }
 
-void CABACEncoder::resetCtxMdls()
-{
-  TCABACEncoder<BinEnc>::xResetCtxModels();
-}
+void CABACEncoder::resetCtxMdls() { TCABACEncoder<BinEnc>::xResetCtxModels(); }
 
-void CABACEncoder::initOptimizerCtxMdls(uint32_t numGtxFlags)
-{
+void CABACEncoder::initOptimizerCtxMdls(uint32_t numGtxFlags) {
   m_CtxStoreOpt.resize(8 * 3 + 3 + m_NumGtxFlags * 2 + 32 + 4);
 
-  for (uint32_t ctxId = 0; ctxId < m_CtxStoreOpt.size(); ctxId++)
-  {
+  for (uint32_t ctxId = 0; ctxId < m_CtxStoreOpt.size(); ctxId++) {
     m_CtxStoreOpt[ctxId].initStates();
   }
 }
 
-void CABACEncoder::resetOptimizerMdls()
-{
-  for (uint32_t ctxId = 0; ctxId < m_CtxStoreOpt.size(); ctxId++)
-  {
+void CABACEncoder::resetOptimizerMdls() {
+  for (uint32_t ctxId = 0; ctxId < m_CtxStoreOpt.size(); ctxId++) {
     m_CtxStoreOpt[ctxId].resetStates();
   }
 }
 
-void CABACEncoder::iae_v( uint8_t v, int32_t value )
-{
-    uint32_t pattern = uint32_t(value) & (uint32_t(0xFFFFFFFF) >> (32-v));
-    m_BinEncoder.encodeBinsEP( pattern, v );
+void CABACEncoder::iae_v(uint8_t v, int32_t value) {
+  uint32_t pattern = uint32_t(value) & (uint32_t(0xFFFFFFFF) >> (32 - v));
+  m_BinEncoder.encodeBinsEP(pattern, v);
 }
 
-void CABACEncoder::uae_v( uint8_t v, uint32_t value )
-{
-    m_BinEncoder.encodeBinsEP( value, v );
+void CABACEncoder::uae_v(uint8_t v, uint32_t value) {
+  m_BinEncoder.encodeBinsEP(value, v);
 }
 
-void CABACEncoder::setBestParamsAndInit()
-{
-    for (uint32_t ctxId = 0; ctxId < m_CtxStore.size()-4 ; ctxId++)
-    {
-      uint8_t bestIdx = m_CtxStoreOpt[ctxId].getBestIdx();
-      m_CtxStore[ctxId].initState( bestIdx );
-    }
+void CABACEncoder::setBestParamsAndInit() {
+  for (uint32_t ctxId = 0; ctxId < m_CtxStore.size() - 4; ctxId++) {
+    uint8_t bestIdx = m_CtxStoreOpt[ctxId].getBestIdx();
+    m_CtxStore[ctxId].initState(bestIdx);
+  }
 }
 
-void CABACEncoder::terminateCabacEncoding()
-{
-    m_BinEncoder.encodeBinTrm(1);
-    m_BinEncoder.finish();
+void CABACEncoder::terminateCabacEncoding() {
+  m_BinEncoder.encodeBinTrm(1);
+  m_BinEncoder.finish();
 }
 
-void CABACEncoder::pseudoEncodeRemAbsLevelNew(uint32_t value)
-{
-  int32_t  remAbsBaseLevel = 0;
+void CABACEncoder::pseudoEncodeRemAbsLevelNew(uint32_t value) {
+  int32_t remAbsBaseLevel = 0;
   uint32_t log2NumElemNextGroup = 0;
   uint32_t ctxIdx = (8 * 3 + 3 + m_NumGtxFlags * 2);
 
-  if (value > 0)
-  {
+  if (value > 0) {
     m_BinEncoder.pseudoEncodeBin(1, m_CtxStoreOpt[ctxIdx]);
     remAbsBaseLevel += (1 << log2NumElemNextGroup);
     ctxIdx++;
     log2NumElemNextGroup++;
-  }
-  else
-  {
+  } else {
     m_BinEncoder.pseudoEncodeBin(0, m_CtxStoreOpt[ctxIdx]);
     return;
   }
-  while (value > (remAbsBaseLevel + (1 << log2NumElemNextGroup) - 1))
-  {
+  while (value > (remAbsBaseLevel + (1 << log2NumElemNextGroup) - 1)) {
+    // std::cout << "RemAbsBaseLevel in PseudoEncode" << remAbsBaseLevel <<
+    // std::endl;
     m_BinEncoder.pseudoEncodeBin(1, m_CtxStoreOpt[ctxIdx]);
     remAbsBaseLevel += (1 << log2NumElemNextGroup);
     ctxIdx++;
@@ -135,33 +118,33 @@ void CABACEncoder::pseudoEncodeRemAbsLevelNew(uint32_t value)
   }
 
   m_BinEncoder.pseudoEncodeBin(0, m_CtxStoreOpt[ctxIdx]);
-  //no pseudoEncode of EP bins
+  // no pseudoEncode of EP bins
 }
 
-void  CABACEncoder::pseudoEncodeWeightVal( int32_t value, int32_t stateId )
-{
+void CABACEncoder::pseudoEncodeWeightVal(int32_t value, int32_t stateId) {
   uint32_t sigFlag = value != 0 ? 1 : 0;
   int32_t sigctx = m_CtxModeler.getSigCtxId(stateId);
 
   m_BinEncoder.pseudoEncodeBin(sigFlag, m_CtxStoreOpt[sigctx]);
 
-  if (sigFlag)
-  {
+  if (sigFlag) {
     uint32_t signFlag = value < 0 ? 1 : 0;
 
     int32_t signCtx = m_CtxModeler.getSignFlagCtxId();
     m_BinEncoder.pseudoEncodeBin(signFlag, m_CtxStoreOpt[signCtx]);
 
     uint32_t remAbsLevel = abs(value) - 1;
-    uint32_t grXFlag = remAbsLevel ? 1 : 0; //greater1
+    uint32_t grXFlag = remAbsLevel ? 1 : 0; // greater1
     int32_t ctxIdx = m_CtxModeler.getGtxCtxId(value, 0, stateId);
 
     m_BinEncoder.pseudoEncodeBin(grXFlag, m_CtxStoreOpt[ctxIdx]);
 
     uint32_t numGreaterFlagsCoded = 1;
+    // std::cout << "m_NumGtxFlags: " << m_NumGtxFlags << std::endl;
 
-    while (grXFlag && (numGreaterFlagsCoded < m_NumGtxFlags) )
-    {
+    // Encodes flag bits of absGrX flags
+    while (grXFlag && (numGreaterFlagsCoded < m_NumGtxFlags)) {
+      // std::cout << "remAbsLevel: " << remAbsLevel << std::endl;
       remAbsLevel--;
       grXFlag = remAbsLevel ? 1 : 0;
       ctxIdx = m_CtxModeler.getGtxCtxId(value, numGreaterFlagsCoded, stateId);
@@ -169,44 +152,40 @@ void  CABACEncoder::pseudoEncodeWeightVal( int32_t value, int32_t stateId )
       numGreaterFlagsCoded++;
     }
 
-    if (grXFlag )
-    {
+    // Encodes the remainder
+    if (grXFlag) {
       remAbsLevel--;
       pseudoEncodeRemAbsLevelNew(remAbsLevel);
     }
-    }
+  }
 }
 
 template <class trellisDef>
-int32_t CABACEncoder::encodeWeights(int32_t *pWeights, uint32_t layerWidth, uint32_t numWeights, uint8_t dq_flag, const int32_t scan_order)
-{
+int32_t CABACEncoder::encodeWeights(int32_t *pWeights, uint32_t layerWidth,
+                                    uint32_t numWeights, uint8_t dq_flag,
+                                    const int32_t scan_order) {
   typename trellisDef::stateTransTab sttab = trellisDef::getStateTransTab();
   m_CtxModeler.resetNeighborCtx();
   int32_t stateId = 0;
 
   Scan scanIterator(ScanType(scan_order), numWeights, layerWidth);
-  if (m_ParamOptFlag)
-  {
-    for (int i = 0; i < numWeights; i++)
-    {
+  if (m_ParamOptFlag) {
+    for (int i = 0; i < numWeights; i++) {
       int32_t value = pWeights[scanIterator.posInMat()];
 
-      if (dq_flag && value != 0)
-      {
+      if (dq_flag && value != 0) {
         value += value < 0 ? -(stateId & 1) : (stateId & 1);
         value >>= 1;
       }
 
       pseudoEncodeWeightVal(pWeights[scanIterator.posInMat()], stateId);
-      m_CtxModeler.updateNeighborCtx(pWeights[scanIterator.posInMat()] );
+      m_CtxModeler.updateNeighborCtx(pWeights[scanIterator.posInMat()]);
 
-      if (dq_flag)
-      {
+      if (dq_flag) {
         stateId = sttab[stateId][value & 1];
       }
-      
-      if (scanIterator.isLastPosOfBlockRowButNotLastPosOfBlock())
-      {
+
+      if (scanIterator.isLastPosOfBlockRowButNotLastPosOfBlock()) {
         resetOptimizerMdls();
         m_CtxModeler.resetNeighborCtx();
       }
@@ -214,19 +193,18 @@ int32_t CABACEncoder::encodeWeights(int32_t *pWeights, uint32_t layerWidth, uint
       scanIterator++;
     }
   }
-    
-  for (int i = 0; i < m_CtxStore.size()-4; i++)
-  {
-    if( !dq_flag && (i > 2 && i < 24) )
-    {
-      continue; //skip unused context models, when DQ is disabled
+
+  for (int i = 0; i < m_CtxStore.size() - 4; i++) {
+    if (!dq_flag && (i > 2 && i < 24)) {
+      continue; // skip unused context models, when DQ is disabled
     }
     uint8_t bestEcoIdx = m_CtxStoreOpt[i].getBestIdx();
 
-    m_BinEncoder.encodeBin(bestEcoIdx ? 1 : 0, m_CtxStore[8 * 3 + 3 + m_NumGtxFlags * 2 + 32 + 2]); //second last ctx model
+    m_BinEncoder.encodeBin(bestEcoIdx ? 1 : 0,
+                           m_CtxStore[8 * 3 + 3 + m_NumGtxFlags * 2 + 32 +
+                                      2]); // second last ctx model
 
-    if (bestEcoIdx != 0)
-    {
+    if (bestEcoIdx != 0) {
       m_BinEncoder.encodeBinsEP(bestEcoIdx - 1, 3);
     }
   }
@@ -237,32 +215,27 @@ int32_t CABACEncoder::encodeWeights(int32_t *pWeights, uint32_t layerWidth, uint
   stateId = 0;
 
   scanIterator.resetScan();
-  if(scan_order != 0)
-  {
+  if (scan_order != 0) {
     m_BinEncoder.entryPointStart();
   }
 
-  for (int i = 0; i < numWeights; i++)
-  {
+  for (int i = 0; i < numWeights; i++) {
     int32_t value = pWeights[scanIterator.posInMat()];
 
-    if (dq_flag && value != 0)
-    {
-        value += value < 0 ? -(stateId & 1) : (stateId & 1);
-        value >>= 1;
+    if (dq_flag && value != 0) {
+      value += value < 0 ? -(stateId & 1) : (stateId & 1);
+      value >>= 1;
     }
 
     encodeWeightVal(value, stateId);
 
     m_CtxModeler.updateNeighborCtx(value);
 
-    if( dq_flag )
-    {
+    if (dq_flag) {
       stateId = sttab[stateId][value & 1];
     }
 
-    if(scanIterator.isLastPosOfBlockRowButNotLastPosOfBlock())
-    {
+    if (scanIterator.isLastPosOfBlockRowButNotLastPosOfBlock()) {
       resetCtxMdls();
       m_CtxModeler.resetNeighborCtx();
       m_BinEncoder.entryPointStart();
@@ -274,14 +247,14 @@ int32_t CABACEncoder::encodeWeights(int32_t *pWeights, uint32_t layerWidth, uint
   return m_NumGtxFlags;
 }
 
-int32_t CABACEncoder::encodeWeights(int32_t *pWeights, uint32_t layerWidth, uint32_t numWeights, const uint8_t dq_flag, const int32_t scan_order)
-{
-  const QuantType qtype = QuantType( dq_flag );
+int32_t CABACEncoder::encodeWeights(int32_t *pWeights, uint32_t layerWidth,
+                                    uint32_t numWeights, const uint8_t dq_flag,
+                                    const int32_t scan_order) {
+  const QuantType qtype = QuantType(dq_flag);
 
-  if ( qtype == URQ || qtype == TCQ8States)
-  {
-    return encodeWeights<Trellis8States>( pWeights, layerWidth, numWeights, dq_flag, scan_order );
+  if (qtype == URQ || qtype == TCQ8States) {
+    return encodeWeights<Trellis8States>(pWeights, layerWidth, numWeights,
+                                         dq_flag, scan_order);
   }
-  assert( !"Unsupported TCQType" );
+  assert(!"Unsupported TCQType");
 }
-

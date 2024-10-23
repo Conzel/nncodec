@@ -329,6 +329,7 @@ void SBMPCtxOptimizer::accumulateBits( int32_t minusBin )
     int32_t bin = -minusBin;
     for(int i = 0; i < 9; i++)
     {
+      
       accBits[i] += getBits(i).scaledEstBits[bin];
     }
 }

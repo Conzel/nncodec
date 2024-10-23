@@ -85,6 +85,7 @@ uint32_t BinEnc::encodeBin( uint32_t bin, SBMPCtx &ctxMdl )
 
   if (minusBin == ctxMdl.getMinusMPS() )
   {
+    // Renormalization
     if (m_Range < 256)
     {
       m_Range += m_Range;
