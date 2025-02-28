@@ -52,7 +52,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <limits>
 
-template <typename TBinEnc> class TCABACEncoder {
+template<typename TBinEnc>
+class TCABACEncoder {
 protected:
   __inline void xInitCtxModels(uint32_t numGtxFlags) {
     m_NumGtxFlags = numGtxFlags;
@@ -69,7 +70,7 @@ protected:
     }
   }
 
-  template <uint32_t (TBinEnc::*FuncBinEnc)(uint32_t, SBMPCtx &)>
+  template<uint32_t (TBinEnc::*FuncBinEnc)(uint32_t, SBMPCtx &)>
   __inline uint32_t xEncRemAbs(int32_t value) {
     uint32_t scaledBits = 0;
     uint32_t log2NumElemNextGroup = 0;
@@ -95,7 +96,7 @@ protected:
     return scaledBits;
   }
 
-  template <uint32_t (TBinEnc::*FuncBinEnc)(uint32_t, SBMPCtx &)>
+  template<uint32_t (TBinEnc::*FuncBinEnc)(uint32_t, SBMPCtx &)>
   __inline uint32_t xEncWeight(int32_t value, int32_t stateId) {
     uint32_t sigFlag = value != 0 ? 1 : 0;
     int32_t sigctx = m_CtxModeler.getSigCtxId(stateId);
@@ -145,27 +146,39 @@ protected:
 
 class CABACEncoder : protected TCABACEncoder<BinEnc> {
 public:
-  CABACEncoder() {}
-  ~CABACEncoder() {}
+  CABACEncoder() {
+  }
+
+  ~CABACEncoder() {
+  }
 
   void startCabacEncoding(std::vector<uint8_t> *pBytestream);
+
   void initCtxMdls(uint32_t numGtxFlags, uint8_t param_opt_flag);
+
   void resetCtxMdls();
 
   void initOptimizerCtxMdls(uint32_t numGtxFlags);
+
   void resetOptimizerMdls();
+
   void setBestParamsAndInit();
+
   void pseudoEncodeWeightVal(int32_t value, int32_t stateId);
+
   void pseudoEncodeRemAbsLevelNew(uint32_t value);
 
   void terminateCabacEncoding();
+
   void iae_v(uint8_t v, int32_t value);
+
   void uae_v(uint8_t v, uint32_t value);
+
   int32_t encodeWeights(int32_t *pWeights, uint32_t layerWidth,
                         uint32_t numWeights, const uint8_t dq_flag,
                         const int32_t scan_order);
 
-  template <class trellisDef>
+  template<class trellisDef>
   int32_t encodeWeights(int32_t *pWeights, uint32_t layerWidth,
                         uint32_t numWeights, const uint8_t dq_flag,
                         const int32_t scan_order);

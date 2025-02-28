@@ -45,46 +45,59 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "CommonLib/ContextModel.h"
 #include <iostream>
 
-class BinEnc
-{
+class BinEnc {
 public:
-    BinEnc  () {}
-    ~BinEnc () {}
+    BinEnc() {
+    }
 
-    void      startBinEncoder      ();
-    void      setByteStreamBuf     ( std::vector<uint8_t> *byteStreamBuf );
+    ~BinEnc() {
+    }
 
-    uint32_t  encodeBin            ( uint32_t bin,  SBMPCtx &ctxMdl  );
-    void      entryPointStart      () { m_Range = 256; }
+    void startBinEncoder();
 
-    void      pseudoEncodeBin      ( uint32_t bin,       SBMPCtxOptimizer &ctxMdl );
+    void setByteStreamBuf(std::vector<uint8_t> *byteStreamBuf);
 
-    uint32_t  encodeBinEP          ( uint32_t bin                    );
-    uint32_t  encodeBinsEP         ( uint32_t bins, uint32_t numBins );
+    uint32_t encodeBin(uint32_t bin, SBMPCtx &ctxMdl);
 
-    void      encodeBinTrm         ( unsigned bin );
-    void      finish               (              );
-    void      terminate_write      (              );
+    void entryPointStart() { m_Range = 256; }
+
+    void pseudoEncodeBin(uint32_t bin, SBMPCtxOptimizer &ctxMdl);
+
+    uint32_t encodeBinEP(uint32_t bin);
+
+    uint32_t encodeBinsEP(uint32_t bins, uint32_t numBins);
+
+    void encodeBinTrm(unsigned bin);
+
+    void finish();
+
+    void terminate_write();
+
 protected:
-    void      write_out         ();
+    void write_out();
+
 private:
-    std::vector<uint8_t>   *m_ByteBuf;
-    uint32_t                m_Low;
-    uint32_t                m_Range;
-    uint8_t                 m_BufferedByte;
-    uint32_t                m_NumBufferedBytes;
-    uint32_t                m_BitsLeft;
-    static const uint32_t   m_auiGoRiceRange[ 10 ];
+    std::vector<uint8_t> *m_ByteBuf;
+    uint32_t m_Low;
+    uint32_t m_Range;
+    uint8_t m_BufferedByte;
+    uint32_t m_NumBufferedBytes;
+    uint32_t m_BitsLeft;
+    static const uint32_t m_auiGoRiceRange[10];
 };
 
 
-class BinEst
-{
+class BinEst {
 public:
-  uint32_t encodeBin    ( uint32_t bin,  SBMPCtx& ctxMdl  )   { return ctxMdl.getBits().scaledEstBits[ bin ]; }
-  uint32_t updateBin    ( uint32_t bin,  SBMPCtx& ctxMdl  )   { ctxMdl.updateState( -(int32_t)bin ); return 0; }
-  uint32_t encodeBinEP  ( uint32_t bin )                      { return (1<<15); }
-  uint32_t encodeBinsEP ( uint32_t bins, uint32_t numBins )   { return (numBins<<15); }
+    uint32_t encodeBin(const uint32_t bin, SBMPCtx &ctxMdl) { return ctxMdl.getBits().scaledEstBits[bin]; }
+
+    uint32_t updateBin(const uint32_t bin, SBMPCtx &ctxMdl) {
+        ctxMdl.updateState(-(int32_t) bin);
+        return 0;
+    }
+
+    uint32_t encodeBinEP(const uint32_t bin) const { return (1 << 15); }
+    uint32_t encodeBinsEP(const uint32_t bins, uint32_t numBins) const { return (numBins << 15); }
 };
 
 #endif // !__BINENC__

@@ -46,19 +46,27 @@ POSSIBILITY OF SUCH DAMAGE.
 
 /// @brief  This class is responsible for getting the locations of the different flags in the
 /// flag array.
-class ContextModeler
-{
+class ContextModeler {
 public:
-    ContextModeler()  {}
-    ~ContextModeler() {}
-public:
-    void    init              ();
-    void    resetNeighborCtx  ();
-    int32_t getSigCtxId       ( int32_t stateId );
-    int32_t getSignFlagCtxId  ();
+    ContextModeler() {
+    }
 
-    int32_t getGtxCtxId       ( int32_t currWeighVal, uint32_t numGtxFlagsCoded, int32_t stateId );
-    void    updateNeighborCtx ( int32_t currWeightVal );
+    ~ContextModeler() {
+    }
+
+public:
+    void init();
+
+    void resetNeighborCtx();
+
+    [[nodiscard]] int32_t getSigCtxId(int32_t stateId) const;
+
+    [[nodiscard]] int32_t getSignFlagCtxId() const;
+
+    int32_t getGtxCtxId(int32_t currWeighVal, uint32_t numGtxFlagsCoded, int32_t stateId) const;
+
+    void updateNeighborCtx(int32_t currWeightVal);
+
 private:
     int32_t neighborWeightVal;
 };

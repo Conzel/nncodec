@@ -6,8 +6,8 @@ the Software are granted under this license.
 
 The Clear BSD License
 
-Copyright (c) 2019-2023, Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. & The NNCodec Authors.
-All rights reserved.
+Copyright (c) 2019-2023, Fraunhofer-Gesellschaft zur Förderung der angewandten
+Forschung e.V. & The NNCodec Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted (subject to the limitations in the disclaimer below) provided that
@@ -38,24 +38,41 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
 
-------------------------------------------------------------------------------------------- */
+-------------------------------------------------------------------------------------------
+*/
 
 #pragma once
 
-#include <array>
-#include "../CommonLib/TypeDef.h"
-#include "../CommonLib/Scan.h"
 #include "../CommonLib/QuantisationInterfaces.h"
-#include "../EncLib/CABACEncoder.h"
+#include "../CommonLib/Scan.h"
+#include "../CommonLib/TypeDef.h"
 #include "../EncLib/BinEncoder.h"
+#include "../EncLib/CABACEncoder.h"
 
-uint32_t quantize(float32_t *weights, int32_t *level, const float32_t qstep, const int32_t stride, const int32_t numTotal, const DistType distType, const double lambdaScale, const uint8_t dq_flag, const uint32_t maxNumNoRem, const int32_t scan_order);
-void deQuantize(float32_t *weights, int32_t *level, const float32_t qstep, const uint32_t numWeights, const int32_t stride, const int32_t scan_order);
-class CabacRate : protected TCABACEncoder<BinEst>
-{
+// Base interface to ensure common function signatures
+class EstimatorInterface {
 public:
-  struct pars
-  {
+  [[nodiscard]] virtual float32_t estimate(int32_t quantisation_index) const = 0;
+
+  virtual void update(int32_t quantisation_index) = 0;
+
+  virtual ~EstimatorInterface() = default;
+};
+
+
+uint32_t quantize(float32_t *weights, int32_t *level, const float32_t qstep,
+                  const int32_t stride, const int32_t numTotal,
+                  const DistType distType, const double lambdaScale,
+                  const uint8_t dq_flag, const uint32_t maxNumNoRem,
+                  const int32_t scan_order);
+
+void deQuantize(float32_t *weights, int32_t *level, const float32_t qstep,
+                const uint32_t numWeights, const int32_t stride,
+                const int32_t scan_order);
+
+class CabacRate : protected TCABACEncoder<BinEst> {
+public:
+  struct pars {
     // int layerwidth;
     uint32_t maxNumNoRem;
   };
@@ -63,26 +80,30 @@ public:
 public:
   // the constructor and the functions must have exactly this form
   CabacRate(int32_t stateId, const pars &p);
+
   void copyCtx(const CabacRate *other);
+
   void updateCtx(int32_t level);
+
   double operator()(int32_t level);
 
 private:
-  const int32_t m_stateId;
+  int32_t m_stateId;
 };
 
-class RateEstimation
-{
+class RateEstimation {
 public:
-  RateEstimation(uint32_t cabac_unary_length_minus1 = 10) : rateEst(0, {cabac_unary_length_minus1}) {}
-  ~RateEstimation() {}
+  explicit RateEstimation(uint32_t cabac_unary_length_minus1 = 10)
+    : rateEst(0, {cabac_unary_length_minus1}) {
+  }
 
-  float32_t estimate(int32_t quantisation_index)
-  {
+  // ~RateEstimation() {}
+
+  float32_t estimate(int32_t quantisation_index) {
     return rateEst(quantisation_index) / this->scale;
   }
-  void update(int32_t quantisation_index)
-  {
+
+  void update(int32_t quantisation_index) {
     rateEst.updateCtx(quantisation_index);
   }
 

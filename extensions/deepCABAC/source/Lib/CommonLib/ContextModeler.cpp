@@ -42,46 +42,39 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "ContextModeler.h"
 
 
-void ContextModeler::init()
-{
+void ContextModeler::init() {
     neighborWeightVal = 0;
 }
 
-void ContextModeler::resetNeighborCtx()
-{
+void ContextModeler::resetNeighborCtx() {
     init();
 }
 
 
-int32_t ContextModeler::getSigCtxId( int32_t stateId )
-{
-  int32_t offset = 3 * stateId;
+int32_t ContextModeler::getSigCtxId(int32_t stateId) const {
+    int32_t offset = 3 * stateId;
     int32_t ctxId = 0;
 
-    if (neighborWeightVal != 0)
-    {
+    if (neighborWeightVal != 0) {
         ctxId = neighborWeightVal < 0 ? 1 : 2;
     }
 
-    return ctxId+offset;
+    return ctxId + offset;
 }
 
-int32_t ContextModeler::getSignFlagCtxId()
-{
-    int32_t ctxId = 8*3;
+int32_t ContextModeler::getSignFlagCtxId() const {
+    int32_t ctxId = 8 * 3;
 
-    if (neighborWeightVal != 0)
-    {
+    if (neighborWeightVal != 0) {
         ctxId += neighborWeightVal < 0 ? 1 : 2;
     }
 
     return ctxId;
 }
 
-int32_t ContextModeler::getGtxCtxId( int32_t currWeighVal, uint32_t numGtxFlagsCoded, int32_t stateId )
-{
-    int32_t offset =  8*3+3;
-    int32_t ctxId  = 0;
+int32_t ContextModeler::getGtxCtxId(int32_t currWeighVal, uint32_t numGtxFlagsCoded, int32_t stateId) const {
+    int32_t offset = 8 * 3 + 3;
+    int32_t ctxId = 0;
 
     ctxId = currWeighVal > 0 ? (numGtxFlagsCoded << 1) : 1 + (numGtxFlagsCoded << 1);
 
@@ -89,7 +82,6 @@ int32_t ContextModeler::getGtxCtxId( int32_t currWeighVal, uint32_t numGtxFlagsC
 }
 
 
-void ContextModeler::updateNeighborCtx( int32_t currWeightVal )
-{
+void ContextModeler::updateNeighborCtx(int32_t currWeightVal) {
     neighborWeightVal = currWeightVal;
 }
