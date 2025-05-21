@@ -6,8 +6,8 @@ the Software are granted under this license.
 
 The Clear BSD License
 
-Copyright (c) 2019-2023, Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. & The NNCodec Authors.
-All rights reserved.
+Copyright (c) 2019-2023, Fraunhofer-Gesellschaft zur Förderung der angewandten
+Forschung e.V. & The NNCodec Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted (subject to the limitations in the disclaimer below) provided that
@@ -38,29 +38,29 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
 
-------------------------------------------------------------------------------------------- */
+-------------------------------------------------------------------------------------------
+*/
 
 #pragma once
 
 #include <array>
-enum DistType
-{
-    DIST_MSE = 0,
+#include <cstdint>
+
+enum DistType {
+  DIST_MSE = 0,
 };
 
-enum QuantType
-{
-    URQ = 0,
-    TCQ8States = 1,
+enum QuantType {
+  URQ = 0,
+  TCQ8States = 1,
 };
 
 // trellis definitions
-struct Trellis8States
-{ // suitable 8-state TCQ
-    typedef const std::array<const std::array<int32_t, 2>, 8> stateTransTab;
-    static stateTransTab getStateTransTab()
-    {
-        static stateTransTab stt{{{0, 2}, {7, 5}, {1, 3}, {6, 4}, {2, 0}, {5, 7}, {3, 1}, {4, 6}}};
-        return stt;
-    }
+struct Trellis8States { // suitable 8-state TCQ
+  typedef const std::array<const std::array<int32_t, 2>, 8> stateTransTab;
+  static stateTransTab getStateTransTab() {
+    static stateTransTab stt{
+        {{0, 2}, {7, 5}, {1, 3}, {6, 4}, {2, 0}, {5, 7}, {3, 1}, {4, 6}}};
+    return stt;
+  }
 };
